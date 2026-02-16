@@ -1,19 +1,18 @@
 """Data loader and cleaner for Cricsheet T20I ball-by-ball data.
 
-This is the FIRST module that runs in the pipeline. It handles:
-1. Loading raw CSV data
-2. Column standardisation (Cricsheet format varies by download date)
-3. Type casting and memory optimisation
-4. Date parsing and filtering
-5. Deduplication
-6. Validation via Pydantic schemas
+Mapped to YOUR actual CSV columns:
+    match_id, date, venue, team1, team2, winner, batting_team,
+    over, batter, bowler, non_striker, runs_batter, runs_extra,
+    runs_total, wicket_type, player_out
+
+Derives missing columns needed by downstream pipeline:
+    bowling_team, inning_no, ball_no, is_wicket, runs_extras
 
 Usage:
     from src.data.loader import CricketDataLoader
 
     loader = CricketDataLoader()
     df = loader.load_and_clean()
-    print(f"Loaded {len(df):,} deliveries from {df['match_id'].nunique()} matches")
 """
 
 import pandas as pd
@@ -29,87 +28,25 @@ from src.utils.validators import validate_dataframe, BallRecord
 class CricketDataLoader:
     """Production-grade data loader for Cricsheet T20I data."""
 
-    # Cricsheet CSV column name variations (they change between file versions)
-    COLUMN_MAP = {
-        # Common variations → standardised name
-        "match_id": "match_id",
-        "season": "season",
-        "start_date": "date",
-        "date": "date",
-        "venue": "venue",
-        "innings": "inning_no",
-        "inning": "inning_no",
-        "inning_no": "inning_no",
-        "ball": "ball_raw",        # Original ball column (e.g., 0.1, 0.2 ... 19.6)
-        "over": "over",
-        "ball_no": "ball_no",
-        "batting_team": "batting_team",
-        "bowling_team": "bowling_team",
-        "striker": "batter",
-        "batter": "batter",
-        "non_striker": "non_striker",
-        "bowler": "bowler",
-        "runs_off_bat": "runs_batter",
-        "runs_batter": "runs_batter",
-        "extras": "runs_extras",
-        "runs_extras": "runs_extras",
-        "runs_total": "runs_total",
-        "wides": "wides",
-        "noballs": "noballs",
-        "byes": "byes",
-        "legbyes": "legbyes",
-        "penalty": "penalty",
-        "wicket_type": "wicket_type",
-        "player_dismissed": "player_dismissed",
-        "is_wicket": "is_wicket",
-    }
-
     def __init__(self, filepath: Optional[Path] = None):
-        """Initialise loader.
-
-        Args:
-            filepath: Path to the CSV file. Defaults to config path.
-        """
         self.filepath = filepath or settings.paths.ball_by_ball_csv
         self.cricket = CricketConstants()
 
     def load_and_clean(self, modern_era_only: bool = True) -> pd.DataFrame:
-        """Full loading pipeline: load → standardise → clean → validate.
-
-        Args:
-            modern_era_only: If True, filter to matches from 2019 onwards.
-
-        Returns:
-            Cleaned, validated DataFrame ready for feature engineering.
-        """
+        """Full pipeline: load → standardise → derive → clean → validate."""
         logger.info(f"Loading data from {self.filepath}")
 
-        # Step 1: Load raw CSV
         df = self._load_raw()
-
-        # Step 2: Standardise column names
         df = self._standardise_columns(df)
-
-        # Step 3: Parse and fix data types
-        df = self._fix_dtypes(df)
-
-        # Step 4: Parse over/ball from raw ball column if needed
-        df = self._parse_overs(df)
-
-        # Step 5: Create derived columns
-        df = self._create_derived_columns(df)
-
-        # Step 6: Handle duplicates
+        df = self._parse_dates(df)
+        df = self._derive_columns(df)
+        df = self._create_helper_columns(df)
         df = self._deduplicate(df)
 
-        # Step 7: Filter to modern era if requested
         if modern_era_only:
             df = self._filter_modern_era(df)
 
-        # Step 8: Optimise memory
         df = self._optimise_memory(df)
-
-        # Step 9: Validate a sample
         df, errors = validate_dataframe(df, BallRecord, sample_size=2000)
 
         logger.info(
@@ -117,8 +54,11 @@ class CricketDataLoader:
             f"{df['match_id'].nunique():,} matches | "
             f"{df['date'].min()} to {df['date'].max()}"
         )
-
         return df
+
+    # =========================================================================
+    # PRIVATE METHODS
+    # =========================================================================
 
     def _load_raw(self) -> pd.DataFrame:
         """Load CSV with error handling."""
@@ -127,154 +67,135 @@ class CricketDataLoader:
                 f"Data file not found: {self.filepath}\n"
                 f"Please place your Cricsheet CSV in: {settings.paths.data_raw}/"
             )
-
         df = pd.read_csv(self.filepath, low_memory=False)
         logger.info(f"Raw data: {len(df):,} rows, {len(df.columns)} columns")
-        logger.debug(f"Columns found: {list(df.columns)}")
         return df
 
     def _standardise_columns(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Map column names to our standard schema."""
-        rename_map = {}
-        for col in df.columns:
-            col_lower = col.lower().strip()
-            if col_lower in self.COLUMN_MAP:
-                rename_map[col] = self.COLUMN_MAP[col_lower]
-
+        """Rename your CSV columns → internal schema names."""
+        rename_map = {
+            "runs_extra": "runs_extras",
+            "player_out": "player_dismissed",
+        }
+        rename_map = {k: v for k, v in rename_map.items() if k in df.columns}
         df = df.rename(columns=rename_map)
-
-        # Check for required columns
-        required = {"match_id", "batter", "bowler", "venue", "batting_team", "bowling_team"}
-        missing = required - set(df.columns)
-        if missing:
-            raise ValueError(f"Missing required columns after standardisation: {missing}")
-
-        logger.info(f"Standardised {len(rename_map)} column names")
+        logger.info(f"Standardised columns: {rename_map}")
         return df
 
-    def _fix_dtypes(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Fix data types — dates, integers, categories."""
-        # Parse dates
+    def _parse_dates(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Parse date column to datetime."""
         if "date" in df.columns:
             df["date"] = pd.to_datetime(df["date"], errors="coerce")
             null_dates = df["date"].isna().sum()
             if null_dates > 0:
                 logger.warning(f"Dropped {null_dates} rows with unparseable dates")
                 df = df.dropna(subset=["date"])
-
-        # Fix numeric columns
-        numeric_cols = ["runs_batter", "runs_extras", "runs_total", "is_wicket"]
-        for col in numeric_cols:
-            if col in df.columns:
-                df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0).astype(int)
-
         return df
 
-    def _parse_overs(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Parse over and ball_no from the raw ball column.
+    def _derive_columns(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Derive columns missing from your CSV but needed by the pipeline.
 
-        Cricsheet uses format like 0.1, 0.2, ..., 19.6
-        where integer part = over, decimal part = ball number.
+        Derives: bowling_team, inning_no, ball_no, is_wicket
         """
-        if "over" in df.columns and "ball_no" in df.columns:
-            # Already parsed — just ensure types
-            df["over"] = df["over"].astype(int)
-            df["ball_no"] = df["ball_no"].astype(int)
-            return df
+        # ---- bowling_team ----
+        if "bowling_team" not in df.columns:
+            if {"team1", "team2", "batting_team"}.issubset(df.columns):
+                df["bowling_team"] = np.where(
+                    df["batting_team"] == df["team1"],
+                    df["team2"],
+                    df["team1"],
+                )
+                logger.info("Derived 'bowling_team' from team1/team2/batting_team")
+            else:
+                raise ValueError("Cannot derive bowling_team: need team1, team2, batting_team")
 
-        if "ball_raw" in df.columns:
-            # Parse from combined column (e.g., 5.3 = over 5, ball 3)
-            df["over"] = df["ball_raw"].astype(float).astype(int)
-            df["ball_no"] = ((df["ball_raw"] % 1) * 10).round().astype(int)
-            logger.info("Parsed over/ball_no from raw ball column")
-        elif "over" in df.columns:
-            # Have over but not ball_no — create ball_no from within-over sequence
-            df["ball_no"] = df.groupby(["match_id", "inning_no", "over"]).cumcount() + 1
-            df["over"] = df["over"].astype(int)
+        # ---- inning_no ----
+        if "inning_no" not in df.columns:
+            first_batting = (
+                df.groupby("match_id")["batting_team"]
+                .first()
+                .reset_index()
+                .rename(columns={"batting_team": "first_batting_team"})
+            )
+            df = df.merge(first_batting, on="match_id", how="left")
+            df["inning_no"] = np.where(
+                df["batting_team"] == df["first_batting_team"], 1, 2
+            )
+            df = df.drop(columns=["first_batting_team"])
+            logger.info("Derived 'inning_no' from batting order within each match")
 
-        return df
+        # ---- ball_no ----
+        if "ball_no" not in df.columns:
+            df["ball_no"] = (
+                df.groupby(["match_id", "inning_no", "over"]).cumcount() + 1
+            )
+            logger.info("Derived 'ball_no' from within-over sequence")
 
-    def _create_derived_columns(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Create essential derived columns used throughout the pipeline."""
-        # is_wicket flag (if not already present)
+        # ---- is_wicket ----
         if "is_wicket" not in df.columns:
             if "wicket_type" in df.columns:
                 df["is_wicket"] = df["wicket_type"].notna().astype(int)
-            elif "player_dismissed" in df.columns:
-                df["is_wicket"] = df["player_dismissed"].notna().astype(int)
+                logger.info(f"Derived 'is_wicket': {df['is_wicket'].sum():,} wickets found")
             else:
                 df["is_wicket"] = 0
-                logger.warning("No wicket information found — setting is_wicket=0 for all")
+                logger.warning("No wicket info found — is_wicket set to 0")
 
-        # Inning number (if missing)
-        if "inning_no" not in df.columns:
-            logger.warning("'inning_no' column missing — attempting to derive from data")
-            df["inning_no"] = 1  # Fallback
+        # ---- runs_extras (ensure exists and is clean) ----
+        if "runs_extras" not in df.columns:
+            df["runs_extras"] = (df["runs_total"] - df["runs_batter"]).clip(lower=0)
+            logger.info("Derived 'runs_extras' from runs_total - runs_batter")
 
-        # runs_total (if missing, calculate from components)
-        if "runs_total" not in df.columns:
-            df["runs_total"] = df.get("runs_batter", 0) + df.get("runs_extras", 0)
+        # Ensure over is integer
+        df["over"] = df["over"].astype(int)
 
-        # Is boundary
+        return df
+
+    def _create_helper_columns(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Create feature-engineering helper columns."""
         df["is_four"] = (df["runs_batter"] == 4).astype(int)
         df["is_six"] = (df["runs_batter"] == 6).astype(int)
         df["is_dot"] = (df["runs_total"] == 0).astype(int)
 
-        # Phase classification
+        # Phase classification (overs are 0-indexed: 0-5, 6-14, 15-19)
         df["phase"] = pd.cut(
             df["over"],
             bins=[-1, 5, 14, 19],
             labels=["Powerplay", "Middle", "Death"],
         )
 
-        logger.info("Created derived columns: is_four, is_six, is_dot, phase")
+        logger.info("Created helper columns: is_four, is_six, is_dot, phase")
         return df
 
     def _deduplicate(self, df: pd.DataFrame) -> pd.DataFrame:
         """Remove duplicate deliveries."""
         before = len(df)
         dedup_cols = ["match_id", "inning_no", "over", "ball_no", "batter", "bowler"]
-        existing_cols = [c for c in dedup_cols if c in df.columns]
-        df = df.drop_duplicates(subset=existing_cols, keep="first")
+        df = df.drop_duplicates(subset=dedup_cols, keep="first")
         removed = before - len(df)
         if removed > 0:
             logger.warning(f"Removed {removed:,} duplicate deliveries")
         return df
 
     def _filter_modern_era(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Filter to modern T20 era (2019+).
-
-        T20 cricket has evolved significantly — pre-2019 data adds noise.
-        """
-        if "date" not in df.columns:
-            logger.warning("No date column — skipping modern era filter")
-            return df
-
+        """Filter to modern T20 era (2019+)."""
         cutoff = pd.Timestamp(self.cricket.MODERN_ERA_START)
-        before = len(df)
         matches_before = df["match_id"].nunique()
-
         df = df[df["date"] >= cutoff]
-
         matches_after = df["match_id"].nunique()
         logger.info(
-            f"Modern era filter: {matches_before} → {matches_after} matches "
-            f"({before - len(df):,} rows removed)"
+            f"Modern era filter: {matches_before} → {matches_after} matches"
         )
         return df
 
     def _optimise_memory(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Reduce memory usage with appropriate dtypes."""
-        # Categorical columns (low cardinality strings)
-        cat_cols = [
-            "batter", "bowler", "non_striker", "venue",
-            "batting_team", "bowling_team", "phase",
-        ]
+        """Reduce memory with appropriate dtypes."""
+        cat_cols = ["batter", "bowler", "non_striker", "venue",
+                    "batting_team", "bowling_team", "phase",
+                    "winner", "team1", "team2"]
         for col in cat_cols:
             if col in df.columns:
                 df[col] = df[col].astype("category")
 
-        # Small integers
         int8_cols = ["over", "ball_no", "runs_batter", "runs_extras",
                      "runs_total", "is_wicket", "is_four", "is_six", "is_dot",
                      "inning_no"]
@@ -282,28 +203,35 @@ class CricketDataLoader:
             if col in df.columns:
                 df[col] = df[col].astype("int8")
 
-        before_mb = df.memory_usage(deep=True).sum() / 1024 / 1024
-        logger.info(f"Memory usage: {before_mb:.1f} MB")
+        mem_mb = df.memory_usage(deep=True).sum() / 1024 / 1024
+        logger.info(f"Memory usage: {mem_mb:.1f} MB")
         return df
 
-    def get_match_list(self, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
-        """Get a summary of all matches in the dataset.
+    # =========================================================================
+    # PUBLIC HELPERS
+    # =========================================================================
 
-        Returns:
-            DataFrame with one row per match: match_id, date, venue, team1, team2, winner.
-        """
+    def get_match_list(self, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
+        """Get a summary of all matches (one row per match)."""
         if df is None:
             df = self.load_and_clean()
 
+        agg_dict = {
+            "date": ("date", "first"),
+            "venue": ("venue", "first"),
+            "total_balls": ("over", "count"),
+        }
+        # Add columns that exist in your data
+        if "team1" in df.columns:
+            agg_dict["team1"] = ("team1", "first")
+        if "team2" in df.columns:
+            agg_dict["team2"] = ("team2", "first")
+        if "winner" in df.columns:
+            agg_dict["winner"] = ("winner", "first")
+
         matches = (
             df.groupby("match_id")
-            .agg(
-                date=("date", "first"),
-                venue=("venue", "first"),
-                team1=("batting_team", "first"),
-                team2=("bowling_team", "first"),
-                total_balls=("over", "count"),
-            )
+            .agg(**agg_dict)
             .reset_index()
             .sort_values("date")
         )
