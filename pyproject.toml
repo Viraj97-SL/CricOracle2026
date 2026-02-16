@@ -1,0 +1,83 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cricoracle2026"
+version = "0.1.0"
+description = "T20 World Cup 2026 Prediction Platform — Match outcomes, scores, and squad optimisation"
+authors = [{name = "Viraj Bulugahapitiya", email = "amanthavirajavb@gmail.com"}]
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+
+keywords = ["cricket", "machine-learning", "deep-learning", "t20", "prediction", "sports-analytics"]
+
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Programming Language :: Python :: 3.11",
+]
+
+[tool.setuptools.packages.find]
+include = ["src*", "api*"]
+
+# ===========================
+# Pytest Configuration
+# ===========================
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--tb=short",
+    "--strict-markers",
+    "--cov=src",
+    "--cov-report=term-missing",
+    "--cov-fail-under=30",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks integration tests that need external APIs",
+    "gpu: marks tests that require a GPU",
+]
+
+# ===========================
+# Ruff Linter Configuration
+# ===========================
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort (import sorting)
+    "N",   # pep8-naming
+    "D",   # pydocstyle (docstrings)
+    "UP",  # pyupgrade
+]
+ignore = [
+    "D100",  # Missing docstring in public module
+    "D104",  # Missing docstring in public package
+    "D203",  # One blank line before class docstring (conflicts with D211)
+    "D213",  # Multi-line summary second line (conflicts with D212)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D"]       # No docstring enforcement in tests
+"notebooks/*" = ["ALL"]  # Skip notebooks entirely
+
+# ===========================
+# MyPy Type Checking
+# ===========================
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
