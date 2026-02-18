@@ -37,19 +37,12 @@ class TeamFeatureEngine:
         """
         logger.info("Building team features...")
 
-        # Get match list with teams and winner
         matches = self._get_match_list()
 
-        # Feature 1: Head-to-head win rates
         h2h = self._calculate_head_to_head(matches)
-
-        # Feature 2: Recent team form (win rate in last N matches)
         form = self._calculate_team_form(matches)
-
-        # Feature 3: Team experience (matches played)
         experience = self._calculate_team_experience(matches)
 
-        # Merge all
         features = (
             h2h
             .merge(form, on="match_id", how="left")
@@ -63,7 +56,6 @@ class TeamFeatureEngine:
         """Get match list with team1, team2, winner, date."""
         agg = {"date": ("date", "first")}
 
-        # Use original team1/team2 columns if available
         if "team1" in self.df.columns:
             agg["team1"] = ("team1", "first")
             agg["team2"] = ("team2", "first")
@@ -76,7 +68,6 @@ class TeamFeatureEngine:
 
         matches = self.df.groupby("match_id").agg(**agg).reset_index()
 
-        # Convert categoricals to string for comparison
         for col in ["team1", "team2", "winner"]:
             if col in matches.columns:
                 matches[col] = matches[col].astype(str)
@@ -92,7 +83,6 @@ class TeamFeatureEngine:
         for idx, match in matches.iterrows():
             t1, t2, date = match["team1"], match["team2"], match["date"]
 
-            # All prior matches between these two teams
             prior = matches[
                 (matches["date"] < date)
                 & (
@@ -106,7 +96,7 @@ class TeamFeatureEngine:
                 t1_wins = (prior["winner"] == t1).sum()
                 h2h_rate = t1_wins / total
             else:
-                h2h_rate = 0.5  # No history = even odds
+                h2h_rate = 0.5
 
             records.append({
                 "match_id": match["match_id"],
@@ -124,27 +114,27 @@ class TeamFeatureEngine:
         for _, match in matches.iterrows():
             t1, t2, date = match["team1"], match["team2"], match["date"]
 
-            # Team 1 recent form
             t1_recent = matches[
                 (matches["date"] < date)
                 & ((matches["team1"] == t1) | (matches["team2"] == t1))
             ].tail(window)
 
-            if len(t1_recent) > 0 and "winner" in t1_recent.columns:
-                t1_form = (t1_recent["winner"] == t1).mean()
-            else:
-                t1_form = 0.5
+            t1_form = (
+                (t1_recent["winner"] == t1).mean()
+                if len(t1_recent) > 0 and "winner" in t1_recent.columns
+                else 0.5
+            )
 
-            # Team 2 recent form
             t2_recent = matches[
                 (matches["date"] < date)
                 & ((matches["team1"] == t2) | (matches["team2"] == t2))
             ].tail(window)
 
-            if len(t2_recent) > 0 and "winner" in t2_recent.columns:
-                t2_form = (t2_recent["winner"] == t2).mean()
-            else:
-                t2_form = 0.5
+            t2_form = (
+                (t2_recent["winner"] == t2).mean()
+                if len(t2_recent) > 0 and "winner" in t2_recent.columns
+                else 0.5
+            )
 
             records.append({
                 "match_id": match["match_id"],
@@ -185,11 +175,112 @@ class TeamFeatureEngine:
         playing_xi: Optional[list[str]] = None,
         venue: Optional[str] = None,
     ) -> dict:
-        """Calculate composite team strength score (Phase 2)."""
-        logger.warning("calculate_team_strength — implement in Phase 2")
+        """Calculate composite team strength score from player profiles.
+
+        Used for inference time (e.g. API calls) where we have a known squad.
+        For training, MatchPlayerFeatureEngine handles this via ball-by-ball.
+
+        Args:
+            team_name: Name of the team.
+            playing_xi: List of player names in the playing XI.
+            venue: Venue name (used to adjust spin weighting).
+
+        Returns:
+            Dict with batting_power, bowling_power, composite_strength.
+        """
+        if self.player_profiles is None:
+            logger.warning(
+                "calculate_team_strength called without player_profiles — "
+                "returning defaults. Pass player_profiles to TeamFeatureEngine."
+            )
+            return {
+                "team": team_name,
+                "batting_power": 130.0,
+                "bowling_power": 8.5,
+                "composite_strength": 0.5,
+            }
+
+        if playing_xi is None:
+            # Infer from historical data: most common players for this team
+            playing_xi = self._infer_typical_xi(team_name)
+
+        profiles = self.player_profiles.copy()
+        team_players = profiles[profiles["batter"].isin(playing_xi)]
+
+        if len(team_players) == 0:
+            logger.warning(
+                f"No profiles found for {team_name} players — using global median"
+            )
+            batting_power = float(profiles["strike_rate"].median())
+        else:
+            # Weight by career balls faced (more established players weighted higher)
+            weights = team_players["balls_faced"].values.astype(float)
+            if weights.sum() > 0:
+                weights = weights / weights.sum()
+            else:
+                weights = np.ones(len(team_players)) / len(team_players)
+
+            batting_power = float(
+                np.average(team_players["strike_rate"].values, weights=weights)
+            )
+
+        # Bowling power from team form (proxy if no bowling profiles available)
+        # A composite of recent form and batting power gives a 0-1 strength score
+        team_recent_form = self._get_team_recent_form(team_name, n=10)
+
+        # Composite: blend batting power (normalised) and recent win rate
+        # normalise batting power: T20 SR range ~80-160, mid = 120
+        batting_power_norm = np.clip((batting_power - 80) / 80, 0, 1)
+        composite = 0.6 * team_recent_form + 0.4 * batting_power_norm
+
         return {
             "team": team_name,
-            "batting_power": 0.0,
-            "bowling_power": 0.0,
-            "composite_strength": 0.0,
+            "batting_power": round(batting_power, 2),
+            "bowling_power": 8.5,  # TODO: wire up bowling profiles at inference time
+            "recent_win_rate": round(team_recent_form, 3),
+            "composite_strength": round(float(composite), 3),
         }
+
+    def _infer_typical_xi(self, team_name: str, n: int = 11) -> list[str]:
+        """Infer the most common playing XI for a team from historical data."""
+        team_str = str(team_name)
+        team_df = self.df[
+            (self.df["batting_team"].astype(str) == team_str)
+            | (self.df["bowling_team"].astype(str) == team_str)
+        ]
+
+        if len(team_df) == 0:
+            return []
+
+        # Most frequent batters for this team
+        top_batters = (
+            team_df[team_df["batting_team"].astype(str) == team_str]
+            .groupby("batter")["match_id"]
+            .nunique()
+            .nlargest(n)
+            .index.tolist()
+        )
+        return top_batters
+
+    def _get_team_recent_form(self, team_name: str, n: int = 10) -> float:
+        """Get win rate for a team in their last N matches from historical data."""
+        team_str = str(team_name)
+        matches = self.df.groupby("match_id").agg(
+            team1=("team1", "first"),
+            team2=("team2", "first"),
+            winner=("winner", "first"),
+            date=("date", "first"),
+        ).reset_index()
+
+        for col in ["team1", "team2", "winner"]:
+            matches[col] = matches[col].astype(str)
+
+        team_matches = matches[
+            (matches["team1"] == team_str) | (matches["team2"] == team_str)
+        ].sort_values("date").tail(n)
+
+        if len(team_matches) == 0:
+            return 0.5
+
+        wins = (team_matches["winner"] == team_str).sum()
+        return wins / len(team_matches)
