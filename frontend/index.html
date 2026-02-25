@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CricOracle 2026 — T20 World Cup Predictor</title>
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --surface2: #21262d;
+    --border: #30363d; --text: #e6edf3; --muted: #8b949e;
+    --green: #3fb950; --blue: #58a6ff; --orange: #f0883e;
+    --red: #f85149; --purple: #bc8cff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace; min-height: 100vh; }
+
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; align-items: center; gap: 1rem; }
+  header h1 { font-size: 1.4rem; color: var(--blue); }
+  header .badge { background: var(--green); color: #000; font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; font-weight: 700; }
+
+  .tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .tab { padding: 0.75rem 1.5rem; cursor: pointer; border-bottom: 2px solid transparent; color: var(--muted); font-size: 0.9rem; transition: all 0.2s; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+  .container { max-width: 900px; margin: 0 auto; padding: 2rem 1rem; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; }
+  .card h2 { font-size: 1rem; color: var(--muted); margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 600px) { .grid2 { grid-template-columns: 1fr; } }
+
+  label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 0.4rem; margin-top: 0.8rem; }
+  select, input { width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 0.6rem 0.8rem; border-radius: 6px; font-size: 0.9rem; }
+  select:focus, input:focus { outline: none; border-color: var(--blue); }
+
+  button.primary { background: var(--blue); color: #000; border: none; padding: 0.75rem 2rem; border-radius: 6px; font-size: 0.9rem; font-weight: 700; cursor: pointer; width: 100%; margin-top: 1rem; transition: opacity 0.2s; }
+  button.primary:hover { opacity: 0.85; }
+  button.primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .result-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem; display: none; }
+  .result-card.show { display: block; }
+
+  .team-row { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--border); }
+  .team-row:last-child { border-bottom: none; }
+  .team-name { font-size: 1.1rem; font-weight: 600; }
+  .prob-bar-wrap { flex: 1; margin: 0 1rem; }
+  .prob-bar { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+  .prob-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
+  .prob-fill.t1 { background: var(--blue); }
+  .prob-fill.t2 { background: var(--orange); }
+  .prob-pct { font-size: 1.2rem; font-weight: 700; min-width: 52px; text-align: right; }
+
+  .score-estimate { display: flex; gap: 0.5rem; align-items: baseline; }
+  .score-big { font-size: 2rem; font-weight: 700; color: var(--green); }
+  .score-range { font-size: 0.8rem; color: var(--muted); }
+
+  .confidence { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 0.75rem; font-weight: 700; }
+  .conf-High { background: #1a4a1a; color: var(--green); }
+  .conf-Medium { background: #3d2e00; color: var(--orange); }
+  .conf-Low { background: #3d1a1a; color: var(--red); }
+
+  .factors { margin-top: 1rem; }
+  .factor { display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.4rem 0; font-size: 0.85rem; }
+  .factor .icon { font-size: 0.8rem; margin-top: 1px; flex-shrink: 0; }
+  .factor.pos .icon::before { content: '▲'; color: var(--green); }
+  .factor.neg .icon::before { content: '▼'; color: var(--red); }
+
+  .spinner { display: none; width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 1rem auto; }
+  .spinner.show { display: block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error-box { background: #2d1a1a; border: 1px solid var(--red); color: var(--red); padding: 0.75rem 1rem; border-radius: 6px; font-size: 0.85rem; margin-top: 1rem; display: none; }
+  .error-box.show { display: block; }
+
+  .squad-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.5rem; margin-top: 0.75rem; }
+  .player-tag { background: var(--surface2); border: 1px solid var(--border); padding: 0.4rem 0.7rem; border-radius: 6px; font-size: 0.85rem; cursor: pointer; display: flex; justify-content: space-between; }
+  .player-tag .rm { color: var(--red); font-size: 0.7rem; }
+  .xi-chip { background: #0d2a0d; border: 1px solid var(--green); padding: 0.35rem 0.7rem; border-radius: 6px; font-size: 0.8rem; color: var(--green); }
+
+  .footer { text-align: center; padding: 2rem; color: var(--muted); font-size: 0.75rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <span style="font-size:1.5rem">🏏</span>
+  <h1>CricOracle 2026</h1>
+  <span class="badge">LIVE</span>
+  <span style="margin-left:auto;color:var(--muted);font-size:0.8rem">T20 World Cup Predictor</span>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('match')">Match Outcome</div>
+  <div class="tab" onclick="switchTab('score')">Score Predictor</div>
+  <div class="tab" onclick="switchTab('squad')">Squad Optimiser</div>
+</div>
+
+<!-- ================= MATCH TAB ================= -->
+<div id="tab-match" class="panel active">
+<div class="container">
+  <div class="card">
+    <h2>Match Prediction</h2>
+    <div class="grid2">
+      <div>
+        <label>Team 1</label>
+        <select id="m-team1" onchange="teamChanged()"><option value="">Select team…</option></select>
+      </div>
+      <div>
+        <label>Team 2</label>
+        <select id="m-team2" onchange="teamChanged()"><option value="">Select team…</option></select>
+      </div>
+    </div>
+    <label>Venue</label>
+    <select id="m-venue"><option value="">Select venue…</option></select>
+    <div class="grid2">
+      <div>
+        <label>Toss Winner <span style="color:var(--muted)">(optional)</span></label>
+        <select id="m-toss-winner"><option value="">Unknown</option></select>
+      </div>
+      <div>
+        <label>Toss Decision <span style="color:var(--muted)">(optional)</span></label>
+        <select id="m-toss-decision">
+          <option value="">Unknown</option>
+          <option value="bat">Bat</option>
+          <option value="field">Field</option>
+        </select>
+      </div>
+    </div>
+    <button class="primary" onclick="predictMatch()">Predict Match</button>
+  </div>
+
+  <div class="spinner" id="m-spinner"></div>
+  <div class="error-box" id="m-error"></div>
+
+  <div class="result-card" id="m-result">
+    <div class="team-row">
+      <div>
+        <span class="team-name" id="m-t1-name">Team 1</span>
+        <div style="margin-top:0.3rem"><span class="confidence" id="m-conf">Medium</span></div>
+      </div>
+      <div class="prob-bar-wrap">
+        <div class="prob-bar"><div class="prob-fill t1" id="m-t1-bar" style="width:50%"></div></div>
+        <div style="font-size:0.7rem;color:var(--muted);margin-top:4px;display:flex;justify-content:space-between"><span id="m-score1">–</span><span id="m-score2">–</span></div>
+      </div>
+      <span class="prob-pct" id="m-t1-pct" style="color:var(--blue)">50%</span>
+    </div>
+    <div class="team-row">
+      <span class="team-name" id="m-t2-name">Team 2</span>
+      <div class="prob-bar-wrap">
+        <div class="prob-bar"><div class="prob-fill t2" id="m-t2-bar" style="width:50%"></div></div>
+      </div>
+      <span class="prob-pct" id="m-t2-pct" style="color:var(--orange)">50%</span>
+    </div>
+    <div class="factors" id="m-factors"></div>
+  </div>
+</div>
+</div>
+
+<!-- ================= SCORE TAB ================= -->
+<div id="tab-score" class="panel">
+<div class="container">
+  <div class="card">
+    <h2>First Innings Score Predictor</h2>
+    <div class="grid2">
+      <div>
+        <label>Batting Team</label>
+        <select id="s-batting"><option value="">Select team…</option></select>
+      </div>
+      <div>
+        <label>Bowling Team</label>
+        <select id="s-bowling"><option value="">Select team…</option></select>
+      </div>
+    </div>
+    <label>Venue</label>
+    <select id="s-venue"><option value="">Select venue…</option></select>
+    <div class="grid2">
+      <div>
+        <label>Toss Winner <span style="color:var(--muted)">(optional)</span></label>
+        <select id="s-toss-winner"><option value="">Unknown</option></select>
+      </div>
+      <div>
+        <label>Toss Decision <span style="color:var(--muted)">(optional)</span></label>
+        <select id="s-toss-decision">
+          <option value="">Unknown</option>
+          <option value="bat">Bat</option>
+          <option value="field">Field</option>
+        </select>
+      </div>
+    </div>
+    <button class="primary" onclick="predictScore()">Predict Score</button>
+  </div>
+
+  <div class="spinner" id="s-spinner"></div>
+  <div class="error-box" id="s-error"></div>
+
+  <div class="result-card" id="s-result">
+    <h2 style="color:var(--muted);font-size:0.8rem;text-transform:uppercase;letter-spacing:0.05em">Predicted First Innings Score</h2>
+    <div style="margin-top:1rem">
+      <span id="s-team-label" style="color:var(--muted);font-size:0.9rem"></span>
+      <div class="score-estimate" style="margin-top:0.5rem">
+        <span class="score-big" id="s-score">–</span>
+        <span class="score-range" id="s-range">–</span>
+      </div>
+    </div>
+    <div style="margin-top:1rem;font-size:0.8rem;color:var(--muted)" id="s-venue-label"></div>
+  </div>
+</div>
+</div>
+
+<!-- ================= SQUAD TAB ================= -->
+<div id="tab-squad" class="panel">
+<div class="container">
+  <div class="card">
+    <h2>Squad Optimiser (GA)</h2>
+    <div class="grid2">
+      <div>
+        <label>Team Name</label>
+        <input type="text" id="sq-team" placeholder="e.g. India" />
+      </div>
+      <div>
+        <label>Venue</label>
+        <select id="sq-venue"><option value="">Select venue…</option></select>
+      </div>
+    </div>
+    <label>Opponent <span style="color:var(--muted)">(optional)</span></label>
+    <input type="text" id="sq-opponent" placeholder="e.g. Australia" />
+    <label>Add player to squad (type & press Enter)</label>
+    <input type="text" id="sq-player-input" placeholder="Player name…" onkeydown="addPlayer(event)" />
+    <div class="squad-list" id="sq-squad-list"></div>
+    <div style="margin-top:0.5rem;font-size:0.8rem;color:var(--muted)" id="sq-count">0 players added (need ≥11)</div>
+    <button class="primary" onclick="optimiseSquad()" id="sq-btn" disabled>Optimise XI</button>
+  </div>
+
+  <div class="spinner" id="sq-spinner"></div>
+  <div class="error-box" id="sq-error"></div>
+
+  <div class="result-card" id="sq-result">
+    <h2>Playing XI</h2>
+    <div id="sq-xi" class="squad-list" style="margin-top:0.5rem"></div>
+    <h2 style="margin-top:1rem">Bench</h2>
+    <div id="sq-bench" class="squad-list" style="margin-top:0.5rem"></div>
+    <div style="margin-top:1rem" id="sq-reasoning"></div>
+  </div>
+</div>
+</div>
+
+<div class="footer">CricOracle 2026 · XGBoost ensemble · AUC 0.897 · <a href="http://localhost:8000/docs" style="color:var(--blue)">API Docs</a></div>
+
+<script>
+const API = 'http://localhost:8000';
+let teams = [], venues = [];
+
+// ─── Bootstrap ────────────────────────────────────────────
+async function init() {
+  try {
+    const r = await fetch(`${API}/predict/teams`);
+    if (!r.ok) throw new Error(r.statusText);
+    const data = await r.json();
+    teams = data.teams;
+    venues = data.venues;
+    populateSelects();
+  } catch(e) {
+    console.error('API unavailable:', e);
+    document.querySelector('.footer').innerHTML += '<br><span style="color:var(--red)">⚠ API offline — start with: uvicorn api.main:app --reload</span>';
+  }
+}
+
+function populateSelects() {
+  const teamSelects = ['m-team1','m-team2','s-batting','s-bowling'];
+  const venueSelects = ['m-venue','s-venue','sq-venue'];
+  const tossSelects = ['m-toss-winner','s-toss-winner'];
+
+  teamSelects.forEach(id => {
+    const el = document.getElementById(id);
+    el.innerHTML = '<option value="">Select team…</option>' +
+      teams.map(t => `<option value="${t}">${t}</option>`).join('');
+  });
+  venueSelects.forEach(id => {
+    const el = document.getElementById(id);
+    el.innerHTML = '<option value="">Select venue…</option>' +
+      venues.map(v => `<option value="${v}">${v}</option>`).join('');
+  });
+}
+
+function teamChanged() {
+  const t1 = document.getElementById('m-team1').value;
+  const t2 = document.getElementById('m-team2').value;
+  const tossEl = document.getElementById('m-toss-winner');
+  tossEl.innerHTML = '<option value="">Unknown</option>';
+  [t1, t2].filter(Boolean).forEach(t => {
+    tossEl.innerHTML += `<option value="${t}">${t}</option>`;
+  });
+}
+
+// ─── Match prediction ──────────────────────────────────────
+async function predictMatch() {
+  const team1 = document.getElementById('m-team1').value;
+  const team2 = document.getElementById('m-team2').value;
+  const venue = document.getElementById('m-venue').value;
+  if (!team1 || !team2 || !venue) { alert('Please fill Team 1, Team 2, and Venue'); return; }
+  if (team1 === team2) { alert('Teams must be different'); return; }
+
+  setLoading('m', true);
+  try {
+    const body = { team1, team2, venue,
+      toss_winner: document.getElementById('m-toss-winner').value || null,
+      toss_decision: document.getElementById('m-toss-decision').value || null };
+    const r = await fetch(`${API}/predict/match`, {
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body)
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.detail || r.statusText);
+    showMatchResult(data);
+  } catch(e) { showError('m', e.message); }
+  setLoading('m', false);
+}
+
+function showMatchResult(d) {
+  document.getElementById('m-t1-name').textContent = d.team1;
+  document.getElementById('m-t2-name').textContent = d.team2;
+  const p1 = (d.team1_win_probability * 100).toFixed(1);
+  const p2 = (d.team2_win_probability * 100).toFixed(1);
+  document.getElementById('m-t1-pct').textContent = p1 + '%';
+  document.getElementById('m-t2-pct').textContent = p2 + '%';
+  document.getElementById('m-t1-bar').style.width = p1 + '%';
+  document.getElementById('m-t2-bar').style.width = p2 + '%';
+  const conf = document.getElementById('m-conf');
+  conf.textContent = d.confidence;
+  conf.className = 'confidence conf-' + d.confidence;
+  if (d.predicted_score_team1) {
+    document.getElementById('m-score1').textContent = `${d.team1}: ~${d.predicted_score_team1} runs`;
+    document.getElementById('m-score2').textContent = `${d.team2}: ~${d.predicted_score_team2} runs`;
+  }
+  const factorsEl = document.getElementById('m-factors');
+  factorsEl.innerHTML = '<div style="font-size:0.8rem;color:var(--muted);margin:0.75rem 0 0.4rem">Key Factors</div>' +
+    (d.key_factors || []).map((f,i) => {
+      const isPos = f.includes('(+');
+      return `<div class="factor ${isPos?'pos':'neg'}"><span class="icon"></span><span>${f}</span></div>`;
+    }).join('');
+  document.getElementById('m-result').classList.add('show');
+}
+
+// ─── Score prediction ──────────────────────────────────────
+async function predictScore() {
+  const batting = document.getElementById('s-batting').value;
+  const bowling = document.getElementById('s-bowling').value;
+  const venue = document.getElementById('s-venue').value;
+  if (!batting || !bowling || !venue) { alert('Please fill all fields'); return; }
+
+  setLoading('s', true);
+  try {
+    const body = { batting_team: batting, bowling_team: bowling, venue,
+      toss_winner: document.getElementById('s-toss-winner').value || null,
+      toss_decision: document.getElementById('s-toss-decision').value || null };
+    const r = await fetch(`${API}/predict/score`, {
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body)
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.detail || r.statusText);
+    document.getElementById('s-team-label').textContent = `${batting} batting`;
+    document.getElementById('s-score').textContent = data.predicted_score;
+    document.getElementById('s-range').textContent = `Range: ${data.score_range_low}–${data.score_range_high} runs (±${Math.round(data.score_range_high - data.predicted_score)} runs)`;
+    document.getElementById('s-venue-label').textContent = `@ ${venue}`;
+    document.getElementById('s-result').classList.add('show');
+  } catch(e) { showError('s', e.message); }
+  setLoading('s', false);
+}
+
+// ─── Squad optimiser ───────────────────────────────────────
+let squadPlayers = [];
+function addPlayer(e) {
+  if (e.key !== 'Enter') return;
+  const input = document.getElementById('sq-player-input');
+  const name = input.value.trim();
+  if (!name || squadPlayers.includes(name)) { input.value = ''; return; }
+  squadPlayers.push(name);
+  input.value = '';
+  renderSquad();
+}
+function removePlayer(name) {
+  squadPlayers = squadPlayers.filter(p => p !== name);
+  renderSquad();
+}
+function renderSquad() {
+  const el = document.getElementById('sq-squad-list');
+  el.innerHTML = squadPlayers.map(p =>
+    `<div class="player-tag">${p}<span class="rm" onclick="removePlayer('${p}')">✕</span></div>`
+  ).join('');
+  document.getElementById('sq-count').textContent = `${squadPlayers.length} players added (need ≥11)`;
+  document.getElementById('sq-btn').disabled = squadPlayers.length < 11;
+}
+
+async function optimiseSquad() {
+  const team = document.getElementById('sq-team').value;
+  const venue = document.getElementById('sq-venue').value;
+  if (!team || !venue) { alert('Fill team name and venue'); return; }
+  if (squadPlayers.length < 11) { alert('Add at least 11 players'); return; }
+
+  setLoading('sq', true);
+  try {
+    const body = { team, venue, squad: squadPlayers,
+      opponent: document.getElementById('sq-opponent').value || null };
+    const r = await fetch(`${API}/squad/optimise`, {
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body)
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.detail || r.statusText);
+    document.getElementById('sq-xi').innerHTML = data.playing_xi.map(p => `<span class="xi-chip">✓ ${p}</span>`).join('');
+    document.getElementById('sq-bench').innerHTML = data.bench.map(p => `<div class="player-tag" style="opacity:0.6">${p}</div>`).join('');
+    document.getElementById('sq-reasoning').innerHTML = '<div style="font-size:0.85rem;color:var(--muted)">' +
+      data.reasoning.map(r => `<div style="padding:0.2rem 0">• ${r}</div>`).join('') + '</div>';
+    if (data.constraint_violations.length) {
+      document.getElementById('sq-reasoning').innerHTML += `<div style="color:var(--orange);font-size:0.8rem;margin-top:0.5rem">⚠ ${data.constraint_violations.join(' · ')}</div>`;
+    }
+    document.getElementById('sq-result').classList.add('show');
+  } catch(e) { showError('sq', e.message); }
+  setLoading('sq', false);
+}
+
+// ─── Utilities ─────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['match','score','squad'][i] === name));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+}
+function setLoading(prefix, on) {
+  document.getElementById(prefix + '-spinner').classList.toggle('show', on);
+  document.getElementById(prefix + '-error').classList.remove('show');
+}
+function showError(prefix, msg) {
+  const el = document.getElementById(prefix + '-error');
+  el.textContent = '⚠ ' + msg;
+  el.classList.add('show');
+}
+
+init();
+</script>
+</body>
+</html>

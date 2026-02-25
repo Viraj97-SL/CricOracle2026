@@ -64,7 +64,10 @@ WIN_PREDICTOR_FEATURE_GROUPS = {
         "team1_top3_sr_L10", "team2_top3_sr_L10", "top_order_form_diff",
         "team1_top3_runs_L10", "team2_top3_runs_L10",
         "team1_avg_boundary_pct", "team2_avg_boundary_pct",
-        "team1_batting_depth", "team2_batting_depth",
+        # NOTE: batting_depth is computed from who ACTUALLY batted in the match
+        # (in-match data), not from pre-match squad info. It leaks outcome signal
+        # (team2_batting_depth has 0.49 correlation with team1_won because a
+        # comfortable chase needs fewer batters). Excluded from win predictor.
     ],
     "player_bowling": [
         "team1_bowling_economy", "team2_bowling_economy", "bowling_economy_diff",
@@ -87,12 +90,12 @@ SCORE_PREDICTOR_FEATURE_GROUPS = {
     ],
     # Batting team strength (team_batting_first = the team scoring)
     # We use team1 features as proxy (pipeline ensures team1 = batting first in context)
+    # NOTE: team1_batting_depth excluded (in-match feature, see WIN_PREDICTOR note)
     "batting_team_strength": [
         "team1_batting_power",
         "team1_top3_sr_L10",
         "team1_top3_runs_L10",
         "team1_avg_boundary_pct",
-        "team1_batting_depth",
     ],
     # Bowling team's defensive quality
     "bowling_team_strength": [
