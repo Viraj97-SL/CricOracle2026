@@ -4,26 +4,32 @@ Wires together:
     - WinPredictor (XGBoost)  → P(team1 wins)
     - ScorePredictor (XGBoost) → first innings score
     - SHAP explainability      → key factors for each prediction
+    - XIFeatureEngine          → exact player-level features when XI is known
 
 Feature construction strategy:
     Given team1, team2, venue (all pre-match):
-    1. Look up the most recent match records for each team
-       (average of last N matches as a team-strength snapshot)
-    2. Look up venue stats from venue_features.parquet
-    3. Construct H2H features from historical matches
-    4. Construct a feature vector matching the model's expected columns
+    1. If playing XI provided → use XIFeatureEngine for exact player-level features
+    2. Otherwise → look up most recent match records for each team (rolling averages)
+    3. Look up venue stats from venue_features.parquet
+    4. Construct H2H features from historical matches
+    5. Build feature vector matching the model's expected columns
 
 Usage:
     from src.models.model_service import get_model_service
 
     svc = get_model_service()
     result = svc.predict_match("India", "Australia", "Wankhede Stadium, Mumbai")
+    result_xi = svc.predict_match(
+        "India", "Australia", "Wankhede Stadium, Mumbai",
+        team1_xi=["Rohit Sharma", "Virat Kohli", ...],
+        team2_xi=["Travis Head", "David Warner", ...],
+    )
 """
 
 from __future__ import annotations
 
 import datetime
-from functools import lru_cache
+import json
 from pathlib import Path
 from typing import Optional
 
@@ -48,6 +54,8 @@ class ModelService:
         self._score_features: list[str] = []
         self._match_df: Optional[pd.DataFrame] = None
         self._venue_df: Optional[pd.DataFrame] = None
+        self._xi_engine = None
+        self._squads: dict = {}
         self._loaded = False
 
     # =========================================================================
@@ -102,8 +110,43 @@ class ModelService:
                 self._venue_df["venue"] = self._venue_df["venue"].astype(str)
             logger.info(f"Loaded {len(self._venue_df)} venue records")
 
+        # Load player profiles for XI-based feature engine
+        self._xi_engine = self._build_xi_engine()
+
+        # Load WC 2026 squad data
+        squads_path = settings.paths.root / "data" / "squads" / "wc2026_squads.json"
+        if squads_path.exists():
+            with open(squads_path) as f:
+                data = json.load(f)
+            self._squads = data.get("teams", {})
+            logger.info(f"Loaded squads for {len(self._squads)} teams")
+
         self._loaded = True
         logger.info("ModelService: ready")
+
+    def _build_xi_engine(self):
+        """Build XIFeatureEngine from available player profiles."""
+        try:
+            from src.features.xi_features import XIFeatureEngine
+            bp_path = settings.paths.data_processed / "batting_profiles.parquet"
+            bowl_path = settings.paths.data_processed / "bowling_profiles.parquet"
+            roles_path = settings.paths.data_processed / "batting_roles.csv"
+            styles_path = settings.paths.data_processed / "bowling_styles.csv"
+            bp = pd.read_parquet(bp_path) if bp_path.exists() else None
+            bowl = pd.read_parquet(bowl_path) if bowl_path.exists() else None
+            roles = pd.read_csv(roles_path) if roles_path.exists() else None
+            styles = pd.read_csv(styles_path) if styles_path.exists() else None
+            engine = XIFeatureEngine(
+                batting_profiles=bp,
+                bowling_profiles=bowl,
+                bowling_styles=styles,
+                batting_roles=roles,
+            )
+            logger.info("XIFeatureEngine loaded")
+            return engine
+        except Exception as e:
+            logger.warning(f"Could not build XIFeatureEngine: {e}")
+            return None
 
     # =========================================================================
     # Public API
@@ -117,8 +160,15 @@ class ModelService:
         toss_winner: Optional[str] = None,
         toss_decision: Optional[str] = None,
         date: Optional[datetime.date] = None,
+        team1_xi: Optional[list[str]] = None,
+        team2_xi: Optional[list[str]] = None,
     ) -> dict:
         """Predict match outcome probability.
+
+        Args:
+            team1_xi: Optional playing XI for team1 — uses exact player profiles
+                      for stronger prediction vs. rolling historical averages.
+            team2_xi: Optional playing XI for team2.
 
         Returns:
             {
@@ -126,13 +176,16 @@ class ModelService:
                 team2_win_prob: float,
                 confidence: str,
                 key_factors: list[str],
-                shap_details: dict,
+                xi_used: bool,
             }
         """
         self._ensure_loaded()
         date = date or datetime.date.today()
 
-        row = self._build_win_features(team1, team2, venue, toss_winner, toss_decision, date)
+        row = self._build_win_features(
+            team1, team2, venue, toss_winner, toss_decision, date,
+            team1_xi=team1_xi, team2_xi=team2_xi,
+        )
         X = pd.DataFrame([row])[self._win_features]
 
         raw_prob = float(self._win_model.predict_proba(X)[:, 1][0])
@@ -152,6 +205,7 @@ class ModelService:
             "key_positive_factors": shap_info.get("key_positive_factors", []),
             "key_negative_factors": shap_info.get("key_negative_factors", []),
             "top_features": shap_info.get("top_features", []),
+            "xi_used": bool(team1_xi or team2_xi),
         }
 
     def predict_score(
@@ -192,18 +246,52 @@ class ModelService:
         }
 
     def get_team_list(self) -> list[str]:
-        """Return all teams available in the historical data."""
-        if self._match_df is None:
-            return list(settings.cricket.WC_2026_TEAMS)
-        teams = set(self._match_df["team1"].tolist()) | set(self._match_df["team2"].tolist())
-        return sorted(t for t in teams if t and t != "nan")
+        """Return WC 2026 teams first, then other historical teams."""
+        wc_teams = list(self._squads.keys()) if self._squads else list(settings.cricket.WC_2026_TEAMS)
+        if self._match_df is not None:
+            hist = set(self._match_df["team1"].tolist()) | set(self._match_df["team2"].tolist())
+            others = sorted(t for t in hist if t and t != "nan" and t not in wc_teams)
+            return wc_teams + others
+        return sorted(wc_teams)
 
     def get_venue_list(self) -> list[str]:
-        """Return all venues available in the historical data."""
-        if self._match_df is None:
-            return list(settings.cricket.WC_2026_VENUES)
-        venues = self._match_df["venue"].dropna().unique().tolist()
-        return sorted(str(v) for v in venues)
+        """Return WC 2026 venues first, then all historical venues."""
+        wc_venues = list(settings.cricket.WC_2026_VENUES)
+        if self._match_df is not None:
+            hist = self._match_df["venue"].dropna().unique().tolist()
+            others = sorted(str(v) for v in hist if str(v) not in wc_venues)
+            return wc_venues + others
+        return sorted(wc_venues)
+
+    def get_squad(self, team: str) -> list[dict]:
+        """Return the WC 2026 squad for a team (from squads JSON)."""
+        if team in self._squads:
+            return self._squads[team].get("squad", [])
+        # Fall back to historical most-frequent players
+        if self._match_df is not None:
+            return []
+        return []
+
+    def get_all_squads(self) -> dict:
+        """Return all WC 2026 squads."""
+        return {
+            team: {
+                "captain": info.get("captain"),
+                "squad": [
+                    {
+                        "name": p["name"],
+                        "role": p["role"],
+                        "batting_order": p.get("batting_order"),
+                        "bowling_style": p.get("bowling_style"),
+                        "is_keeper": p.get("is_keeper", False),
+                        "is_captain": p.get("is_captain", False),
+                        "injury_status": p.get("injury_status", "fit"),
+                    }
+                    for p in info.get("squad", [])
+                ]
+            }
+            for team, info in self._squads.items()
+        }
 
     def health(self) -> dict:
         """Check if models and data are loaded."""
@@ -227,8 +315,14 @@ class ModelService:
         toss_winner: Optional[str],
         toss_decision: Optional[str],
         date: datetime.date,
+        team1_xi: Optional[list[str]] = None,
+        team2_xi: Optional[list[str]] = None,
     ) -> dict:
-        """Construct win-predictor feature row from team + venue names."""
+        """Construct win-predictor feature row from team + venue names.
+
+        If playing XIs are provided, uses XIFeatureEngine for exact player-level
+        features. Otherwise falls back to rolling historical team averages.
+        """
         row: dict = {}
 
         # Date features
@@ -249,15 +343,41 @@ class ModelService:
         h2h = self._lookup_h2h(team1, team2)
         row.update(h2h)
 
-        # Team1 features (most recent N matches as team1)
-        t1 = self._lookup_team_features(team1, side="team1")
-        row.update(t1)
+        # Team features — use XI engine if available and XI provided
+        if self._xi_engine is not None and (team1_xi or team2_xi):
+            # Get squad meta for role info
+            t1_meta = self._get_squad_meta(team1, team1_xi)
+            t2_meta = self._get_squad_meta(team2, team2_xi)
 
-        # Team2 features (most recent N matches as team2)
-        t2 = self._lookup_team_features(team2, side="team2")
-        row.update(t2)
+            if team1_xi:
+                xi_t1 = self._xi_engine.compute_xi_features(team1_xi, t1_meta, prefix="team1")
+                row.update(xi_t1)
+            else:
+                t1 = self._lookup_team_features(team1, side="team1")
+                row.update(t1)
 
-        # Differentials
+            if team2_xi:
+                xi_t2 = self._xi_engine.compute_xi_features(team2_xi, t2_meta, prefix="team2")
+                row.update(xi_t2)
+            else:
+                t2 = self._lookup_team_features(team2, side="team2")
+                row.update(t2)
+
+            # Form and experience still come from historical data
+            hist_t1 = self._lookup_team_features(team1, side="team1")
+            hist_t2 = self._lookup_team_features(team2, side="team2")
+            row["team1_form_L10"] = hist_t1.get("team1_form_L10", 0.5)
+            row["team2_form_L10"] = hist_t2.get("team2_form_L10", 0.5)
+            row["team1_matches_played"] = hist_t1.get("team1_matches_played", 50)
+            row["team2_matches_played"] = hist_t2.get("team2_matches_played", 50)
+        else:
+            # Historical rolling averages
+            t1 = self._lookup_team_features(team1, side="team1")
+            t2 = self._lookup_team_features(team2, side="team2")
+            row.update(t1)
+            row.update(t2)
+
+        # Differentials (always recompute from whatever t1/t2 features ended up in row)
         row["form_diff"] = row.get("team1_form_L10", 0.5) - row.get("team2_form_L10", 0.5)
         row["experience_diff"] = row.get("team1_matches_played", 0) - row.get("team2_matches_played", 0)
         row["batting_power_diff"] = row.get("team1_batting_power", 130) - row.get("team2_batting_power", 130)
@@ -271,6 +391,15 @@ class ModelService:
                 row[feat] = 0.0
 
         return row
+
+    def _get_squad_meta(self, team: str, xi: Optional[list[str]]) -> Optional[list[dict]]:
+        """Get squad metadata from wc2026_squads.json for role/style info."""
+        if team not in self._squads:
+            return None
+        squad = self._squads[team].get("squad", [])
+        if xi:
+            return [p for p in squad if p["name"] in xi]
+        return squad
 
     def _build_score_features(
         self,

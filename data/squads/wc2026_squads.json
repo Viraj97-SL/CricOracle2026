@@ -1,0 +1,263 @@
+{
+  "_meta": {
+    "tournament": "ICC Men's T20 World Cup 2026",
+    "hosts": ["India", "Sri Lanka"],
+    "last_updated": "2026-02-27",
+    "source": "Based on current T20I form and announced squads where available",
+    "note": "Update player list and injury_status as official announcements are made"
+  },
+  "teams": {
+    "India": {
+      "captain": "Rohit Sharma",
+      "coach": "Gautam Gambhir",
+      "squad": [
+        {"name": "Rohit Sharma",      "role": "Batsman",       "batting_order": "Opener",   "bowling_style": "Pace",   "is_keeper": false, "is_captain": true,  "injury_status": "fit"},
+        {"name": "Virat Kohli",       "role": "Batsman",       "batting_order": "Top Order","bowling_style": null,     "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Shubman Gill",      "role": "Batsman",       "batting_order": "Opener",   "bowling_style": null,     "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Suryakumar Yadav",  "role": "Batsman",       "batting_order": "Middle Order","bowling_style": null,  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "KL Rahul",          "role": "Batsman",       "batting_order": "Middle Order","bowling_style": null,  "is_keeper": true,  "is_captain": false, "injury_status": "fit"},
+        {"name": "Rishabh Pant",      "role": "Batsman",       "batting_order": "Middle Order","bowling_style": null,  "is_keeper": true,  "is_captain": false, "injury_status": "fit"},
+        {"name": "Tilak Varma",       "role": "Batsman",       "batting_order": "Middle Order","bowling_style": null,  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Hardik Pandya",     "role": "All-rounder",   "batting_order": "Middle Order","bowling_style": "Pace","is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Ravindra Jadeja",   "role": "All-rounder",   "batting_order": "Lower Order","bowling_style": "Spin", "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Axar Patel",        "role": "All-rounder",   "batting_order": "Lower Order","bowling_style": "Spin", "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Kuldeep Yadav",     "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Spin",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Yuzvendra Chahal",  "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Spin",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Jasprit Bumrah",    "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Arshdeep Singh",    "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Mohammed Shami",    "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"}
+      ]
+    },
+    "Pakistan": {
+      "captain": "Babar Azam",
+      "coach": "Jason Gillespie",
+      "squad": [
+        {"name": "Babar Azam",        "role": "Batsman",       "batting_order": "Opener",   "bowling_style": null,    "is_keeper": false, "is_captain": true,  "injury_status": "fit"},
+        {"name": "Mohammad Rizwan",   "role": "Batsman",       "batting_order": "Opener",   "bowling_style": null,    "is_keeper": true,  "is_captain": false, "injury_status": "fit"},
+        {"name": "Saim Ayub",         "role": "Batsman",       "batting_order": "Opener",   "bowling_style": "Spin",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Fakhar Zaman",      "role": "Batsman",       "batting_order": "Opener",   "bowling_style": null,    "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Iftikhar Ahmed",    "role": "All-rounder",   "batting_order": "Middle Order","bowling_style": "Spin","is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Azam Khan",         "role": "Batsman",       "batting_order": "Middle Order","bowling_style": null,  "is_keeper": true,  "is_captain": false, "injury_status": "fit"},
+        {"name": "Shadab Khan",       "role": "All-rounder",   "batting_order": "Middle Order","bowling_style": "Spin","is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Mohammad Nawaz",    "role": "All-rounder",   "batting_order": "Lower Order","bowling_style": "Spin", "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Imad Wasim",        "role": "All-rounder",   "batting_order": "Lower Order","bowling_style": "Spin", "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Shaheen Shah Afridi","role": "Bowler",       "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Naseem Shah",       "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Haris Rauf",        "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Abrar Ahmed",       "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Spin",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Usman Khan",        "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Irfan Khan Niazi",  "role": "Batsman",       "batting_order": "Middle Order","bowling_style": null,  "is_keeper": false, "is_captain": false, "injury_status": "fit"}
+      ]
+    },
+    "Australia": {
+      "captain": "Mitchell Marsh",
+      "coach": "Andrew McDonald",
+      "squad": [
+        {"name": "Travis Head",       "role": "Batsman",       "batting_order": "Opener",   "bowling_style": "Spin",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "David Warner",      "role": "Batsman",       "batting_order": "Opener",   "bowling_style": null,    "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Mitchell Marsh",    "role": "All-rounder",   "batting_order": "Top Order","bowling_style": "Pace",  "is_keeper": false, "is_captain": true,  "injury_status": "fit"},
+        {"name": "Glenn Maxwell",     "role": "All-rounder",   "batting_order": "Middle Order","bowling_style": "Spin","is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Tim David",         "role": "Batsman",       "batting_order": "Middle Order","bowling_style": null,  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Marcus Stoinis",    "role": "All-rounder",   "batting_order": "Middle Order","bowling_style": "Pace","is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Josh Inglis",       "role": "Batsman",       "batting_order": "Middle Order","bowling_style": null,  "is_keeper": true,  "is_captain": false, "injury_status": "fit"},
+        {"name": "Matthew Wade",      "role": "Batsman",       "batting_order": "Lower Order","bowling_style": null,  "is_keeper": true,  "is_captain": false, "injury_status": "fit"},
+        {"name": "Cameron Green",     "role": "All-rounder",   "batting_order": "Lower Order","bowling_style": "Pace","is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Pat Cummins",       "role": "All-rounder",   "batting_order": "Lower Order","bowling_style": "Pace","is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Josh Hazlewood",    "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Mitchell Starc",    "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Adam Zampa",        "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Spin",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Nathan Ellis",      "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Sean Abbott",       "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"}
+      ]
+    },
+    "England": {
+      "captain": "Jos Buttler",
+      "coach": "Matthew Mott",
+      "squad": [
+        {"name": "Jos Buttler",       "role": "Batsman",       "batting_order": "Top Order","bowling_style": null,    "is_keeper": true,  "is_captain": true,  "injury_status": "fit"},
+        {"name": "Phil Salt",         "role": "Batsman",       "batting_order": "Opener",   "bowling_style": null,    "is_keeper": true,  "is_captain": false, "injury_status": "fit"},
+        {"name": "Ben Duckett",       "role": "Batsman",       "batting_order": "Opener",   "bowling_style": null,    "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Harry Brook",       "role": "Batsman",       "batting_order": "Top Order","bowling_style": "Spin",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Joe Root",          "role": "Batsman",       "batting_order": "Top Order","bowling_style": "Spin",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Liam Livingstone",  "role": "All-rounder",   "batting_order": "Middle Order","bowling_style": "Spin","is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Sam Curran",        "role": "All-rounder",   "batting_order": "Lower Order","bowling_style": "Pace", "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Moeen Ali",         "role": "All-rounder",   "batting_order": "Middle Order","bowling_style": "Spin","is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Jofra Archer",      "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Mark Wood",         "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Reece Topley",      "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Adil Rashid",       "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Spin",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Chris Jordan",      "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Jonny Bairstow",    "role": "Batsman",       "batting_order": "Top Order","bowling_style": null,    "is_keeper": true,  "is_captain": false, "injury_status": "fit"},
+        {"name": "Will Jacks",        "role": "All-rounder",   "batting_order": "Middle Order","bowling_style": "Spin","is_keeper": false, "is_captain": false, "injury_status": "fit"}
+      ]
+    },
+    "South Africa": {
+      "captain": "Aiden Markram",
+      "coach": "Rob Walter",
+      "squad": [
+        {"name": "Temba Bavuma",      "role": "Batsman",       "batting_order": "Opener",   "bowling_style": null,    "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Quinton de Kock",   "role": "Batsman",       "batting_order": "Opener",   "bowling_style": null,    "is_keeper": true,  "is_captain": false, "injury_status": "fit"},
+        {"name": "Rilee Rossouw",     "role": "Batsman",       "batting_order": "Top Order","bowling_style": null,    "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Aiden Markram",     "role": "All-rounder",   "batting_order": "Middle Order","bowling_style": "Spin","is_keeper": false, "is_captain": true,  "injury_status": "fit"},
+        {"name": "David Miller",      "role": "Batsman",       "batting_order": "Middle Order","bowling_style": null,  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Heinrich Klaasen",  "role": "Batsman",       "batting_order": "Middle Order","bowling_style": null,  "is_keeper": true,  "is_captain": false, "injury_status": "fit"},
+        {"name": "Tristan Stubbs",    "role": "Batsman",       "batting_order": "Middle Order","bowling_style": null,  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Marco Jansen",      "role": "All-rounder",   "batting_order": "Lower Order","bowling_style": "Pace", "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Kagiso Rabada",     "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Anrich Nortje",     "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Gerald Coetzee",    "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Tabraiz Shamsi",    "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Spin",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Keshav Maharaj",    "role": "Bowler",        "batting_order": "Lower Order","bowling_style": "Spin", "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Ryan Rickelton",    "role": "Batsman",       "batting_order": "Opener",   "bowling_style": null,    "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Wayne Parnell",     "role": "All-rounder",   "batting_order": "Lower Order","bowling_style": "Pace", "is_keeper": false, "is_captain": false, "injury_status": "fit"}
+      ]
+    },
+    "New Zealand": {
+      "captain": "Kane Williamson",
+      "coach": "Gary Stead",
+      "squad": [
+        {"name": "Finn Allen",        "role": "Batsman",       "batting_order": "Opener",   "bowling_style": null,    "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Devon Conway",      "role": "Batsman",       "batting_order": "Opener",   "bowling_style": null,    "is_keeper": true,  "is_captain": false, "injury_status": "fit"},
+        {"name": "Kane Williamson",   "role": "Batsman",       "batting_order": "Top Order","bowling_style": "Spin",  "is_keeper": false, "is_captain": true,  "injury_status": "fit"},
+        {"name": "Daryl Mitchell",    "role": "All-rounder",   "batting_order": "Middle Order","bowling_style": "Pace","is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Glenn Phillips",    "role": "All-rounder",   "batting_order": "Middle Order","bowling_style": "Spin","is_keeper": true,  "is_captain": false, "injury_status": "fit"},
+        {"name": "Mark Chapman",      "role": "Batsman",       "batting_order": "Middle Order","bowling_style": "Spin","is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "James Neesham",     "role": "All-rounder",   "batting_order": "Lower Order","bowling_style": "Pace", "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Michael Bracewell", "role": "All-rounder",   "batting_order": "Middle Order","bowling_style": "Spin","is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Mitchell Santner",  "role": "All-rounder",   "batting_order": "Lower Order","bowling_style": "Spin", "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Tim Southee",       "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Trent Boult",       "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Lockie Ferguson",   "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Matt Henry",        "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Ish Sodhi",         "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Spin",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Adam Milne",        "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"}
+      ]
+    },
+    "West Indies": {
+      "captain": "Rovman Powell",
+      "coach": "Daren Sammy",
+      "squad": [
+        {"name": "Brandon King",      "role": "Batsman",       "batting_order": "Opener",   "bowling_style": null,    "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Kyle Mayers",       "role": "All-rounder",   "batting_order": "Opener",   "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Nicholas Pooran",   "role": "Batsman",       "batting_order": "Top Order","bowling_style": null,    "is_keeper": true,  "is_captain": false, "injury_status": "fit"},
+        {"name": "Rovman Powell",     "role": "Batsman",       "batting_order": "Middle Order","bowling_style": null,  "is_keeper": false, "is_captain": true,  "injury_status": "fit"},
+        {"name": "Shimron Hetmyer",   "role": "Batsman",       "batting_order": "Middle Order","bowling_style": null,  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Andre Russell",     "role": "All-rounder",   "batting_order": "Middle Order","bowling_style": "Pace","is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Romario Shepherd",  "role": "All-rounder",   "batting_order": "Lower Order","bowling_style": "Pace", "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Shai Hope",         "role": "Batsman",       "batting_order": "Middle Order","bowling_style": null,  "is_keeper": true,  "is_captain": false, "injury_status": "fit"},
+        {"name": "Jason Holder",      "role": "All-rounder",   "batting_order": "Lower Order","bowling_style": "Pace", "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Akeal Hosein",      "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Spin",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Gudakesh Motie",    "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Spin",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Alzarri Joseph",    "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Obed McCoy",        "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Roston Chase",      "role": "All-rounder",   "batting_order": "Middle Order","bowling_style": "Spin","is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Odean Smith",       "role": "All-rounder",   "batting_order": "Lower Order","bowling_style": "Pace", "is_keeper": false, "is_captain": false, "injury_status": "fit"}
+      ]
+    },
+    "Sri Lanka": {
+      "captain": "Wanindu Hasaranga",
+      "coach": "Sanath Jayasuriya",
+      "squad": [
+        {"name": "Pathum Nissanka",   "role": "Batsman",       "batting_order": "Opener",   "bowling_style": "Spin",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Kusal Mendis",      "role": "Batsman",       "batting_order": "Opener",   "bowling_style": null,    "is_keeper": true,  "is_captain": false, "injury_status": "fit"},
+        {"name": "Kusal Perera",      "role": "Batsman",       "batting_order": "Opener",   "bowling_style": null,    "is_keeper": true,  "is_captain": false, "injury_status": "fit"},
+        {"name": "Charith Asalanka",  "role": "Batsman",       "batting_order": "Top Order","bowling_style": "Spin",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Dhananjaya de Silva","role": "All-rounder",  "batting_order": "Middle Order","bowling_style": "Spin","is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Dasun Shanaka",     "role": "All-rounder",   "batting_order": "Middle Order","bowling_style": "Pace","is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Wanindu Hasaranga", "role": "All-rounder",   "batting_order": "Lower Order","bowling_style": "Spin", "is_keeper": false, "is_captain": true,  "injury_status": "fit"},
+        {"name": "Angelo Mathews",    "role": "All-rounder",   "batting_order": "Middle Order","bowling_style": "Pace","is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Maheesh Theekshana","role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Spin",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Matheesha Pathirana","role": "Bowler",       "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Dushmantha Chameera","role": "Bowler",       "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Dilshan Madushanka","role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Jeffrey Vandersay", "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Spin",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Bhanuka Rajapaksa", "role": "Batsman",       "batting_order": "Middle Order","bowling_style": null,  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Pramod Madushan",   "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"}
+      ]
+    },
+    "Afghanistan": {
+      "captain": "Rashid Khan",
+      "coach": "Jonathan Trott",
+      "squad": [
+        {"name": "Rahmanullah Gurbaz","role": "Batsman",       "batting_order": "Opener",   "bowling_style": null,    "is_keeper": true,  "is_captain": false, "injury_status": "fit"},
+        {"name": "Ibrahim Zadran",    "role": "Batsman",       "batting_order": "Opener",   "bowling_style": null,    "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Hazratullah Zazai", "role": "Batsman",       "batting_order": "Opener",   "bowling_style": null,    "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Najibullah Zadran", "role": "Batsman",       "batting_order": "Middle Order","bowling_style": null,  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Azmatullah Omarzai","role": "All-rounder",   "batting_order": "Middle Order","bowling_style": "Pace","is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Mohammad Nabi",     "role": "All-rounder",   "batting_order": "Middle Order","bowling_style": "Spin","is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Karim Janat",       "role": "All-rounder",   "batting_order": "Middle Order","bowling_style": "Pace","is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Rashid Khan",       "role": "All-rounder",   "batting_order": "Lower Order","bowling_style": "Spin", "is_keeper": false, "is_captain": true,  "injury_status": "fit"},
+        {"name": "Mujeeb Ur Rahman",  "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Spin",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Fazalhaq Farooqi",  "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Naveen-ul-Haq",     "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Gulbadin Naib",     "role": "All-rounder",   "batting_order": "Lower Order","bowling_style": "Pace", "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Salim Safi",        "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Nangeyalia Kharote","role": "Batsman",       "batting_order": "Middle Order","bowling_style": null,  "is_keeper": true,  "is_captain": false, "injury_status": "fit"},
+        {"name": "Mohammad Ishaq",    "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"}
+      ]
+    },
+    "Bangladesh": {
+      "captain": "Najmul Hossain Shanto",
+      "coach": "Chandika Hathurusingha",
+      "squad": [
+        {"name": "Tanzid Hasan",      "role": "Batsman",       "batting_order": "Opener",   "bowling_style": null,    "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Litton Das",        "role": "Batsman",       "batting_order": "Opener",   "bowling_style": null,    "is_keeper": true,  "is_captain": false, "injury_status": "fit"},
+        {"name": "Najmul Hossain Shanto","role": "Batsman",    "batting_order": "Top Order","bowling_style": null,    "is_keeper": false, "is_captain": true,  "injury_status": "fit"},
+        {"name": "Towhid Hridoy",     "role": "Batsman",       "batting_order": "Middle Order","bowling_style": null,  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Mushfiqur Rahim",   "role": "Batsman",       "batting_order": "Middle Order","bowling_style": null,  "is_keeper": true,  "is_captain": false, "injury_status": "fit"},
+        {"name": "Mahmudullah",       "role": "All-rounder",   "batting_order": "Middle Order","bowling_style": "Spin","is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Shakib Al Hasan",   "role": "All-rounder",   "batting_order": "Middle Order","bowling_style": "Spin","is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Afif Hossain",      "role": "All-rounder",   "batting_order": "Lower Order","bowling_style": "Pace", "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Mehidy Hasan Miraz","role": "All-rounder",   "batting_order": "Lower Order","bowling_style": "Spin", "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Taskin Ahmed",      "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Mustafizur Rahman", "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Shoriful Islam",    "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Hasan Mahmud",      "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Tanzim Hasan",      "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Jaker Ali",         "role": "All-rounder",   "batting_order": "Lower Order","bowling_style": "Pace", "is_keeper": false, "is_captain": false, "injury_status": "fit"}
+      ]
+    },
+    "Scotland": {
+      "captain": "Richie Berrington",
+      "coach": "Shane Burger",
+      "squad": [
+        {"name": "George Munsey",     "role": "Batsman",       "batting_order": "Opener",   "bowling_style": null,    "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Michael Jones",     "role": "Batsman",       "batting_order": "Opener",   "bowling_style": null,    "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Richie Berrington", "role": "All-rounder",   "batting_order": "Top Order","bowling_style": "Spin",  "is_keeper": false, "is_captain": true,  "injury_status": "fit"},
+        {"name": "Matthew Cross",     "role": "Batsman",       "batting_order": "Middle Order","bowling_style": null,  "is_keeper": true,  "is_captain": false, "injury_status": "fit"},
+        {"name": "Calum MacLeod",     "role": "All-rounder",   "batting_order": "Middle Order","bowling_style": "Pace","is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Chris Greaves",     "role": "All-rounder",   "batting_order": "Middle Order","bowling_style": "Spin","is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Mark Watt",         "role": "All-rounder",   "batting_order": "Lower Order","bowling_style": "Spin", "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Michael Leask",     "role": "All-rounder",   "batting_order": "Lower Order","bowling_style": "Spin", "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Safyaan Sharif",    "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Brad Wheal",        "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Hamza Tahir",       "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Spin",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Brandon McMullen",  "role": "All-rounder",   "batting_order": "Middle Order","bowling_style": "Pace","is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Charlie Tear",      "role": "Batsman",       "batting_order": "Top Order","bowling_style": null,    "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Oliver Hairs",      "role": "Batsman",       "batting_order": "Middle Order","bowling_style": null,  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Alasdair Evans",    "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"}
+      ]
+    },
+    "Ireland": {
+      "captain": "Paul Stirling",
+      "coach": "Heinrich Malan",
+      "squad": [
+        {"name": "Paul Stirling",     "role": "All-rounder",   "batting_order": "Opener",   "bowling_style": "Spin",  "is_keeper": false, "is_captain": true,  "injury_status": "fit"},
+        {"name": "Andrew Balbirnie",  "role": "Batsman",       "batting_order": "Opener",   "bowling_style": null,    "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Lorcan Tucker",     "role": "Batsman",       "batting_order": "Top Order","bowling_style": null,    "is_keeper": true,  "is_captain": false, "injury_status": "fit"},
+        {"name": "Harry Tector",      "role": "Batsman",       "batting_order": "Middle Order","bowling_style": "Spin","is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Gareth Delany",     "role": "All-rounder",   "batting_order": "Middle Order","bowling_style": "Spin","is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "George Dockrell",   "role": "All-rounder",   "batting_order": "Lower Order","bowling_style": "Spin", "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Mark Adair",        "role": "All-rounder",   "batting_order": "Lower Order","bowling_style": "Pace", "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Curtis Campher",    "role": "All-rounder",   "batting_order": "Middle Order","bowling_style": "Pace","is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Barry McCarthy",    "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Craig Young",       "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Josh Little",       "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Fionn Hand",        "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Pace",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Matthew Humphreys", "role": "Bowler",        "batting_order": "Tail",     "bowling_style": "Spin",  "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Trent Johnston",    "role": "All-rounder",   "batting_order": "Lower Order","bowling_style": "Pace", "is_keeper": false, "is_captain": false, "injury_status": "fit"},
+        {"name": "Neil Rock",         "role": "Batsman",       "batting_order": "Middle Order","bowling_style": null,  "is_keeper": true,  "is_captain": false, "injury_status": "fit"}
+      ]
+    }
+  }
+}

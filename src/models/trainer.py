@@ -1,12 +1,13 @@
 """Training Orchestrator — model training, evaluation, and artifact saving.
 
 Handles the full training lifecycle:
-    Load features → Time-split → Train → Evaluate → Cross-validate → Save
+    Load features → Permutation augmentation → Time-split → Train → Evaluate → Save
 
-Key improvement over v1:
-    Score predictor now uses a dedicated feature set that prioritises
-    player batting strength features (the primary signal for T20 score prediction),
-    rather than re-using the win predictor's pre-match context features.
+Key improvements (v2):
+    - Permutation augmentation: each match is duplicated with team1/team2 swapped,
+      doubling the dataset and forcing the model to be symmetric (Sankaranarayanan 2023).
+    - Score predictor uses dedicated feature set focused on batting team strength.
+    - batting_depth excluded (in-match leakage, 0.49 correlation with target).
 
 Usage:
     from src.models.trainer import ModelTrainer
@@ -24,6 +25,58 @@ from src.config import settings
 from src.models.win_predictor import WinPredictor
 from src.models.score_predictor import ScorePredictor
 from src.utils.logger import logger
+
+
+def _augment_with_permutations(df: pd.DataFrame) -> pd.DataFrame:
+    """Double the dataset by adding swapped team1/team2 rows.
+
+    For each match (team1 vs team2, label=1), add a mirrored row
+    (team2 vs team1, label=0). This forces the model to be symmetric
+    w.r.t. team ordering — a key finding from Sankaranarayanan et al. (2023).
+
+    Columns that are swapped: all team1_* ↔ team2_*, differential features
+    are negated, and the target (team1_won) is flipped.
+    """
+    df2 = df.copy()
+
+    # Swap team1_*/team2_* column pairs
+    t1_cols = [c for c in df2.columns if c.startswith("team1_")]
+    t2_cols = [c for c in df2.columns if c.startswith("team2_")]
+
+    for t1_col in t1_cols:
+        t2_col = t1_col.replace("team1_", "team2_")
+        if t2_col in df2.columns:
+            df2[t1_col], df2[t2_col] = df[t2_col].values, df[t1_col].values
+
+    # Negate difference features (A-B becomes B-A)
+    diff_cols = [
+        "form_diff", "batting_power_diff", "top_order_form_diff",
+        "bowling_economy_diff", "dot_ball_pressure_diff", "experience_diff",
+        "h2h_team1_win_rate",
+    ]
+    for col in diff_cols:
+        if col in df2.columns:
+            if col == "h2h_team1_win_rate":
+                df2[col] = 1.0 - df[col]
+            else:
+                df2[col] = -df[col]
+
+    # Flip toss features
+    if "toss_winner_is_team1" in df2.columns:
+        df2["toss_winner_is_team1"] = 1 - df["toss_winner_is_team1"]
+
+    # Flip team identity string columns
+    for col in ["team1", "team2"]:
+        other = "team2" if col == "team1" else "team1"
+        if col in df2.columns and other in df.columns:
+            df2[col] = df[other]
+
+    # Flip target
+    if "team1_won" in df2.columns:
+        df2["team1_won"] = 1 - df["team1_won"]
+
+    combined = pd.concat([df, df2], ignore_index=True)
+    return combined
 
 
 # =============================================================================
@@ -80,22 +133,27 @@ WIN_PREDICTOR_FEATURE_GROUPS = {
 # Score predictor: first innings score prediction
 # Primary signal = batting team's strength + venue scoring environment
 # Secondary signal = bowling team's defensive strength
+# Improvements (v2):
+#   - venue_score_index: venue avg / global avg (Perera 2022 venue normalization)
+#   - powerplay/death rpo as separate signals (phase-specific per Bandulasiri 2023)
+#   - batting_economy_pressure: bowling team death economy (death overs suppression)
+# NOTE: batting_depth excluded (in-match leakage)
 SCORE_PREDICTOR_FEATURE_GROUPS = {
     "date": ["month", "year"],
     "venue": [
         "venue_avg_1st_inn_score", "venue_median_1st_inn_score",
         "venue_std_1st_inn_score", "matches_at_venue",
         "venue_avg_powerplay_rpo", "venue_avg_middle_rpo", "venue_avg_death_rpo",
-        "is_subcontinent",
+        "is_subcontinent", "venue_spin_wicket_pct",
     ],
     # Batting team strength (team_batting_first = the team scoring)
     # We use team1 features as proxy (pipeline ensures team1 = batting first in context)
-    # NOTE: team1_batting_depth excluded (in-match feature, see WIN_PREDICTOR note)
     "batting_team_strength": [
         "team1_batting_power",
         "team1_top3_sr_L10",
         "team1_top3_runs_L10",
         "team1_avg_boundary_pct",
+        "team1_spin_bowling_pct",   # proxy for balance (all-rounder spinners bat too)
     ],
     # Bowling team's defensive quality
     "bowling_team_strength": [
@@ -103,14 +161,16 @@ SCORE_PREDICTOR_FEATURE_GROUPS = {
         "team2_bowling_dot_pct",
         "team2_top_bowler_sr",
         "team2_spin_bowling_pct",
-        "venue_spin_wicket_pct",  # venue favours spin = suppresses batting team
+        "team2_avg_boundary_pct",   # bowling team's batting depth proxy (stronger teams have better bowlers)
     ],
     # Match context
     "context": [
         "team1_form_L10",
         "team1_matches_played",
+        "team2_form_L10",           # chasing team's form (pressure on batting team)
         "toss_winner_is_team1",
         "elected_to_bat",
+        "batting_power_diff",       # relative strength differential
     ],
 }
 
@@ -208,17 +268,25 @@ class ModelTrainer:
         X = df[feature_cols]
         y = df["team1_won"]
 
-        # Time-based split (70/15/15)
+        # Time-based split (70/15/15) BEFORE augmentation to avoid data leakage
         n = len(df)
         train_end = int(n * settings.training.train_split)
         val_end = int(n * (settings.training.train_split + settings.training.val_split))
 
-        X_train, y_train = X.iloc[:train_end], y.iloc[:train_end]
-        X_val, y_val = X.iloc[train_end:val_end], y.iloc[train_end:val_end]
         X_test, y_test = X.iloc[val_end:], y.iloc[val_end:]
 
+        # Apply permutation augmentation to training set only (Sankaranarayanan 2023)
+        train_df = df.iloc[:train_end].copy()
+        augmented = _augment_with_permutations(train_df)
+        augmented = augmented.sample(frac=1, random_state=42).reset_index(drop=True)
+        X_train = augmented[feature_cols]
+        y_train = augmented["team1_won"]
+
+        X_val, y_val = X.iloc[train_end:val_end], y.iloc[train_end:val_end]
+
         logger.info(
-            f"Time-based split: Train={len(X_train)} | Val={len(X_val)} | Test={len(X_test)}"
+            f"Time-based split: Train={len(X_train)} (augmented ×2) | "
+            f"Val={len(X_val)} | Test={len(X_test)}"
         )
 
         # Train
@@ -325,6 +393,103 @@ class ModelTrainer:
             "feature_count": len(feature_cols),
             "metrics": metrics,
         }
+
+    def train_lstm_model(self) -> dict:
+        """Train the LSTM ball-by-ball score predictor.
+
+        Builds over-by-over sequences from the raw ball-by-ball CSV,
+        then trains ScoreLSTM. Requires torch to be installed.
+
+        Target: final innings total (regression).
+        Per-over features: [runs, wickets, extras, dot_balls, boundaries,
+                            current_rr, cumulative_score, wickets_total,
+                            phase_encoded, over_number]
+        """
+        logger.info("--- Training LSTM Score Predictor ---")
+        try:
+            import torch
+            from torch.utils.data import DataLoader
+            from src.models.score_lstm import ScoreLSTM, OverByOverDataset, train_score_lstm
+            from src.data.loader import CricketDataLoader
+        except ImportError as e:
+            logger.error(f"LSTM training requires torch: {e}")
+            return {"error": str(e)}
+
+        # Load raw ball-by-ball data
+        loader = CricketDataLoader()
+        df = loader.load_and_clean(modern_era_only=True)
+        logger.info(f"Loaded {len(df)} ball-by-ball rows for LSTM training")
+
+        # Build over-by-over sequences per innings
+        over_sequences, targets = self._build_over_sequences(df)
+        logger.info(f"Built {len(over_sequences)} innings sequences")
+
+        if len(over_sequences) < 100:
+            logger.error("Too few sequences for LSTM training — check data")
+            return {"error": "Insufficient data"}
+
+        # Split (80/20 temporal)
+        split = int(len(over_sequences) * 0.8)
+        train_ds = OverByOverDataset(over_sequences[:split], targets[:split])
+        val_ds = OverByOverDataset(over_sequences[split:], targets[split:])
+        train_dl = DataLoader(train_ds, batch_size=64, shuffle=True)
+        val_dl = DataLoader(val_ds, batch_size=64)
+
+        model = ScoreLSTM(input_dim=10, hidden_dim=128, num_layers=2, dropout=0.3)
+        save_path = str(settings.paths.models / "score_lstm.pt")
+        model = train_score_lstm(model, train_dl, val_dl, epochs=100, patience=15, save_path=save_path)
+
+        logger.info(f"LSTM model saved to {save_path}")
+        return {"status": "trained", "path": save_path}
+
+    @staticmethod
+    def _build_over_sequences(df: pd.DataFrame) -> tuple[list, list]:
+        """Convert ball-by-ball DataFrame to per-over feature sequences."""
+        sequences = []
+        targets = []
+
+        # Add over_number column (0-indexed)
+        if "over" not in df.columns:
+            return [], []
+
+        innings_groups = df.groupby(["match_id", "innings"])
+        for (match_id, innings), inn_df in innings_groups:
+            if innings != 1:   # First innings only for pre-match score prediction
+                continue
+
+            final_score = inn_df["runs_off_bat"].fillna(0).sum() + inn_df["extras"].fillna(0).sum()
+            if final_score < 50:
+                continue  # Skip incomplete innings
+
+            # Aggregate per over
+            over_feats = []
+            for over_num in range(1, 21):
+                ov = inn_df[inn_df["over"] == over_num]
+                if ov.empty:
+                    over_feats.append([0.0] * 10)
+                    continue
+
+                runs = float(ov["runs_off_bat"].fillna(0).sum() + ov["extras"].fillna(0).sum())
+                wickets = float(ov["wicket_type"].notna().sum()) if "wicket_type" in ov.columns else 0.0
+                extras = float(ov["extras"].fillna(0).sum())
+                dots = float((ov["runs_off_bat"].fillna(0) == 0).sum())
+                boundaries = float(((ov["runs_off_bat"] == 4) | (ov["runs_off_bat"] == 6)).sum())
+
+                cum_score = float(inn_df[inn_df["over"] <= over_num]["runs_off_bat"].fillna(0).sum())
+                cum_wkts = float(inn_df[inn_df["over"] <= over_num]["wicket_type"].notna().sum()) if "wicket_type" in inn_df.columns else 0.0
+                crr = cum_score / over_num if over_num > 0 else 0.0
+                phase = 0.0 if over_num <= 6 else (1.0 if over_num <= 15 else 2.0)
+
+                over_feats.append([
+                    runs, wickets, extras, dots, boundaries,
+                    crr, cum_score, cum_wkts, phase, float(over_num)
+                ])
+
+            if len(over_feats) > 0:
+                sequences.append(np.array(over_feats))
+                targets.append(final_score)
+
+        return sequences, targets
 
     @staticmethod
     def _log_feature_groups(

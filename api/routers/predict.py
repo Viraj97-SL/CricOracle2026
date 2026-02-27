@@ -18,6 +18,8 @@ class MatchPredictionRequest(BaseModel):
     venue: str
     toss_winner: Optional[str] = None
     toss_decision: Optional[str] = None
+    team1_xi: Optional[list[str]] = None   # Playing XI for team1 (11 names)
+    team2_xi: Optional[list[str]] = None   # Playing XI for team2 (11 names)
 
     @field_validator("toss_decision")
     @classmethod
@@ -36,7 +38,14 @@ class MatchPredictionResponse(BaseModel):
     predicted_score_team2: Optional[int] = None
     confidence: str
     key_factors: list[str]
+    xi_used: bool = False
     model_version: str
+
+
+class SquadInfoResponse(BaseModel):
+    team: str
+    captain: Optional[str]
+    squad: list[dict]
 
 
 class ScorePredictionRequest(BaseModel):
@@ -74,6 +83,27 @@ async def list_teams():
     return TeamListResponse(teams=svc.get_team_list(), venues=svc.get_venue_list())
 
 
+@router.get("/squads", summary="All WC 2026 squads")
+async def get_all_squads():
+    """Return WC 2026 squad for all teams (names, roles, injury status)."""
+    from src.models.model_service import get_model_service
+    svc = get_model_service()
+    return svc.get_all_squads()
+
+
+@router.get("/squads/{team}", response_model=SquadInfoResponse)
+async def get_squad(team: str):
+    """Return WC 2026 squad for a specific team."""
+    from src.models.model_service import get_model_service
+    from fastapi import HTTPException
+    svc = get_model_service()
+    squads = svc.get_all_squads()
+    if team not in squads:
+        raise HTTPException(status_code=404, detail=f"Team '{team}' not found in WC 2026 squads")
+    info = squads[team]
+    return SquadInfoResponse(team=team, captain=info.get("captain"), squad=info.get("squad", []))
+
+
 @router.post("/match", response_model=MatchPredictionResponse)
 async def predict_match(request: MatchPredictionRequest):
     """Predict match outcome (win probability) with SHAP-derived key factors.
@@ -91,6 +121,8 @@ async def predict_match(request: MatchPredictionRequest):
             venue=request.venue,
             toss_winner=request.toss_winner,
             toss_decision=request.toss_decision,
+            team1_xi=request.team1_xi,
+            team2_xi=request.team2_xi,
         )
 
         # Also get score estimates
@@ -123,6 +155,7 @@ async def predict_match(request: MatchPredictionRequest):
             predicted_score_team2=score2["predicted_score"],
             confidence=result["confidence"],
             key_factors=key_factors,
+            xi_used=result.get("xi_used", False),
             model_version="1.0.0",
         )
 

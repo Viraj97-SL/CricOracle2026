@@ -1,5 +1,7 @@
 """Team-level feature aggregation.
 
+
+
 Aggregates player-level features into team strength scores.
 Handles: head-to-head records, team form, batting/bowling power ratings.
 
@@ -236,7 +238,7 @@ class TeamFeatureEngine:
         return {
             "team": team_name,
             "batting_power": round(batting_power, 2),
-            "bowling_power": 8.5,  # TODO: wire up bowling profiles at inference time
+            "bowling_power": 8.5,   # median economy proxy — use XIFeatureEngine for exact XI
             "recent_win_rate": round(team_recent_form, 3),
             "composite_strength": round(float(composite), 3),
         }

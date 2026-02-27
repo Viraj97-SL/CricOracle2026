@@ -59,7 +59,10 @@ def main():
     elif args.model == "score":
         trainer.train_score_model()
     elif args.model == "lstm":
-        logger.info("LSTM training — TODO: Implement in Phase 2")
+        logger.info("LSTM score predictor training — requires ball-by-ball over sequences")
+        from src.models.trainer import ModelTrainer
+        trainer_lstm = ModelTrainer()
+        trainer_lstm.train_lstm_model()
 
     logger.info("Training complete!")
 
